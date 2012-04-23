@@ -43,6 +43,10 @@ dta2 <- data.frame(dta,months=months[,"months"])
 mm1 <- lmer(MeanNursingScore ~ Trustnum  + Group*months + (1|Wardname), data=dta2)
 display(mm1)
 
+mmb <- update(mm1, .~. - Group:months)
+
+mmb1 <- update(mmb, .~. - Group)
+display(mmb1)
 #lht(mm1,"GroupBasicFeedback:months = GroupFeedbackPlus:months")
 #
 #wave <- factor(dta$time)
@@ -56,13 +60,47 @@ plot(1:6,p1)
 ##########################
 ## Effects plot used in paper
 ###########################
+###########
+#### Baseline, no Group
+b.b1 <- fixef(mmb1)
+Months <- gl(7,1,21,labels=seq(0,18,by=3))
+Months <- as.numeric(Months)
+MeanNurseScore <- b.b1[1] + b.b1[3]*Months
+b1.plot.dta <- data.frame(MeanNurseScore,Months)
+ggplot(b1.plot.dta, aes(x=Months,y=MeanNurseScore)) + geom_line() + theme_bw() +
+  ylab("Mean Nursing Score")
+
+### Baseline
+mth <- seq(0,18,by=3)
+b.base <- fixef(mmb)
+Control <- b.base[1] + b.base[5]*mth
+BasicFB <- Control + b.base[3] 
+FBPlus <- Control + b.base[4]
+Months <- gl(7,1,21,labels=seq(0,18,by=3))
+Months <- as.numeric(Months)
+Group <- gl(3,7,labels=c("Control","Basic Feedback","Feedback Plus"))
+
+base.plot.dta <- data.frame(Months,MeanNurseScore=c(Control,BasicFB,FBPlus),Group)
+
+ggplot(base.plot.dta,aes(x=Months,y=MeanNurseScore,colour=Group)) + geom_line()+
+  ylab("Mean Nursing Score") + theme_bw()
+
 e1 <- allEffects(mm1,xlevels=list(months=c(0,3,6,9,12,15,18)))
 e1[2]
 
+e2 <- effect('Group:months',mm1,xlevels=list(months=c(0,3,6,9,12,15,18)))
 
-plot(e1)
+plot(e2)
 
-pp <- ggplot(dta2, aes(x=months,y=MeanNursingScore, group=Wardname)) + geom_line() + facet_wrap( ~ Group)
+Months <- gl(7,3,labels=seq(0,18,by=3))
+Months <- as.numeric(Months)
+MeanNurseScore <- e2$fit
+Group <- gl(3,1,21,labels=c("Control","Basic Feedback","Feedback Plus"))
+eff.plot.dta <- data.frame(Months,MeanNurseScore,Group)
+ggplot(eff.plot.dta,aes(x=Months,y=MeanNurseScore,colour=Group)) + geom_line()+
+  ylab("Mean Nursing Score") + theme_bw()
+
+pp <- ggplot(dta2, aes(x=months,y=MeanNursingScore, group=Wardname)) + geom_line() + facet_wrap( ~ Group) 
 pp
 
 
